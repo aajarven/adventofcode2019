@@ -31,6 +31,8 @@ int main(int argc, char **argv){
 		total_fuel += module_fuel + total_metafuel;
 	}
 	printf("Fuel for modules and fuel: %d\n", total_fuel);
+	
+	free(masses);
 	exit(EXIT_SUCCESS);
 }
 
