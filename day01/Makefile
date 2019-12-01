@@ -6,7 +6,7 @@ all: fuel
 fuel: fuel.o ../utils/filereader.o
 	$(CC) $(CFLAGS) -o bin/fuel fuel.o ../utils/filereader.o
 
-fuel.o: fuel.c ../utils/filereader.o
+fuel.o: fuel.c fuel.h ../utils/filereader.o
 	$(CC) $(CFLAGS) -c fuel.c
 
 ../utils/filereader.o: ../utils/filereader.c ../utils/filereader.h

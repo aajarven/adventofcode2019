@@ -1,0 +1,1 @@
+int fuel(int mass);
