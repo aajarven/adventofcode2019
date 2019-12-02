@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-pedantic -Wall -Wextra -std=gnu99
+CFLAGS=-pedantic -Wall -Wextra -std=gnu99 -Wno-format-security
 
 all: intcode
 
