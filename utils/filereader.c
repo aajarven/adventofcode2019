@@ -61,3 +61,15 @@ int count_fields(char* filename, char separator){
 	fclose(fp);
 	return len;
 }
+
+/*
+ * Read a the lines from a text file into the given 2D char array. Modifies the
+ * array in place.
+ */
+void read_lines(char* filename, char* arr, int max_line_length, int max_lines){
+	FILE *fp = fopen(filename, "r");
+	int line = 0;
+	while(fgets(&(arr[line * max_line_length]), max_line_length, fp) != NULL && ++line < max_lines){
+	}
+	fclose(fp);
+}
