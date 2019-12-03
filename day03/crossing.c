@@ -1,9 +1,11 @@
 #include<math.h>
+#include<stdbool.h>
 #include<stdio.h>
 #include<stdlib.h>
 #include"crossing.h"
 #include"../utils/filereader.h"
 
+#define GRIDSIZE 15000
 #define GRIDCENTER (GRIDSIZE / 2)
 #define MAX_STR_LEN 1500
 
@@ -26,42 +28,76 @@ int main(int argc, char **argv){
 	char lines[2][MAX_STR_LEN];
 	read_lines(argv[1], lines[0], MAX_STR_LEN, wire_count);
 	
+	int closest_crossing_x = 0;
+	int closest_crossing_y = 0;
+	int closest_crossing_distance = GRIDSIZE * 2;
+
 	char direction;
 	int length;
-	char* line_ptr = &lines[0][0];
-//	int current_x = 0;
-//	int current_y = 0;
-	printf("rivi: %s\n", line_ptr);
-	printf("whiling\n");
-	while(sscanf(line_ptr, "%c", &direction)){
-		printf("read direction %c\n", direction);
-		line_ptr++;
-		sscanf(line_ptr, "%d,", &length);
-		printf("read length %d\n", length);
-		int numlength = ceil(log10((double) length));
-		printf("moving the pointer forward %d\n", numlength);
-		line_ptr += numlength + 1;
-		int dx = 0;
-		int dy = 0;
-		switch (direction){
-			case 'U':
-				dy = 1;
+	for (int line=0; line<wire_count; line++) {
+		char* line_ptr = &lines[line][0];
+		int current_x = 0;
+		int current_y = 0;
+
+		int wire = line + 1; // avoid having zeroeth wire == no wire
+		while(true) {
+			sscanf(line_ptr, "%c", &direction);
+			line_ptr++;
+			
+			sscanf(line_ptr, "%d,", &length);
+			line_ptr += (int) floor(log10((double) length)) + 1;
+
+			int dx = 0;
+			int dy = 0;
+			switch (direction){
+				case 'U':
+					dy = -1;
+					break;
+				case 'D':
+					dy = 1;
+					break;
+				case 'L':
+					dx = -1;
+					break;
+				case 'R':
+					dx = 1;
+					break;
+				default:
+					fprintf(stderr, "Invalid direction char %c\n", direction);
+					exit(EXIT_FAILURE);
+			}
+
+			for(int i=0; i < length; i++){
+				// advance along the wire
+				current_x += dx;
+				current_y += dy;
+
+				// check for collisions
+				int current_value = get_grid_value(grid, current_x, current_y);
+				if (current_value && current_value != wire){
+					int current_centre_distance = manhattan_from_centre(current_x, current_y);
+
+					// update the best found if necessary
+					if (current_centre_distance < closest_crossing_distance){
+						closest_crossing_x = current_x;
+						closest_crossing_y = current_y;
+						closest_crossing_distance = current_centre_distance;
+					}
+				} else {
+					// if no collision, just set the wire value
+					set_grid_value(grid, current_x, current_y, wire);
+				}
+			}
+
+			if (*line_ptr == '\0' || *line_ptr == '\n') {
 				break;
-			case 'D':
-				dy = -1;
-				break;
-			case 'L':
-				dx = -1;
-				break;
-			case 'R':
-				dx = 1;
-				break;
-			default:
-				fprintf(stderr, "Invalid direction char %c\n%d", direction, dx+dy);
-				exit(EXIT_FAILURE);
+			} else {
+				line_ptr++;
+			}
 		}
-//		printf("%c%d\n", direction, length);
 	}
+	
+	printf("Closest crossing: (%d, %d): %d\n", closest_crossing_x, closest_crossing_y, closest_crossing_distance);
 }
 
 
@@ -70,22 +106,15 @@ int main(int argc, char **argv){
  * (rounded down when needed). This function returns the value in the given
  * position.
  */
-int get_grid_value(int grid[GRIDSIZE][GRIDSIZE], int x, int y){
-	return grid[transform_to_grid(y)][transform_to_grid(x)];
+int get_grid_value(int* grid, int x, int y){
+	return grid[transform_to_grid(y) * GRIDSIZE + transform_to_grid(x)];
 }
 
 /*
  * Set the value in the cell (x, y) of the grid,
  */
-void set_grid_value(int grid[GRIDSIZE][GRIDSIZE], int x, int y, int value){
-	grid[transform_to_grid(y)][transform_to_grid(x)] = value;
-}
-
-/*
- * Increment the value in the cell (x, y) of the grid.
- */
-void increment_grid_value(int grid[GRIDSIZE][GRIDSIZE], int x, int y){
-	grid[transform_to_grid(y)][transform_to_grid(x)]++;
+void set_grid_value(int* grid, int x, int y, int value){
+	grid[transform_to_grid(y) * GRIDSIZE + transform_to_grid(x)] = value;
 }
 
 /*
@@ -95,4 +124,12 @@ void increment_grid_value(int grid[GRIDSIZE][GRIDSIZE], int x, int y){
  */ 
 int transform_to_grid(int coordinate){
 	return coordinate + GRIDCENTER;
+}
+
+/*
+ * Calculate the manhattan distance of the given coordinates from the centre of
+ * the grid.
+ */
+int manhattan_from_centre(int x, int y){
+	return abs(x) + abs(y);
 }
