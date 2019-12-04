@@ -114,6 +114,9 @@ int main(int argc, char **argv){
 
 	printf("Closest manhattan crossing: %d\n", closest_crossing_manhattan);
 	printf("Closest wiredistance crossing: %d\n", closest_crossing_wiredist);
+
+	free(grid);
+	exit(EXIT_SUCCESS);
 }
 
 
