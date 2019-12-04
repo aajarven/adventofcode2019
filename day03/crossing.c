@@ -1,3 +1,4 @@
+#include<limits.h>
 #include<math.h>
 #include<stdbool.h>
 #include<stdio.h>
@@ -28,27 +29,32 @@ int main(int argc, char **argv){
 	char lines[2][MAX_STR_LEN];
 	read_lines(argv[1], lines[0], MAX_STR_LEN, wire_count);
 	
-	int closest_crossing_x = 0;
-	int closest_crossing_y = 0;
-	int closest_crossing_distance = GRIDSIZE * 2;
+	// one of the wires calculated distance along the wire in positive numbers,
+	// another one in negative ones
+	int wire_increments[] = {1, -1};
+	int closest_crossing_manhattan = INT_MAX;
+	int closest_crossing_wiredist = INT_MAX;
 
 	char direction;
 	int length;
+	// log the wires into the grid and do crossing checks
 	for (int line=0; line<wire_count; line++) {
+		// current position on the string representing the wire
 		char* line_ptr = &lines[line][0];
+		// cartesian coordinates of the end of the wire
 		int current_x = 0;
 		int current_y = 0;
+		// distance from the centre along the wire
+		int wire_increment = wire_increments[line];
+		int current_wire_value = 0;
 
-		int wire = line + 1; // avoid having zeroeth wire == no wire
+		// follow the wire
 		while(true) {
-			sscanf(line_ptr, "%c", &direction);
-			line_ptr++;
-			
-			sscanf(line_ptr, "%d,", &length);
-			line_ptr += (int) floor(log10((double) length)) + 1;
-
+			// read direction char and determine x and y movement
 			int dx = 0;
 			int dy = 0;
+			sscanf(line_ptr, "%c", &direction);
+			line_ptr++;
 			switch (direction){
 				case 'U':
 					dy = -1;
@@ -66,26 +72,35 @@ int main(int argc, char **argv){
 					fprintf(stderr, "Invalid direction char %c\n", direction);
 					exit(EXIT_FAILURE);
 			}
+			
+			// read movement distance
+			sscanf(line_ptr, "%d,", &length);
+			line_ptr += (int) floor(log10((double) length)) + 1;
 
+			// log the movement in the grid and check crossings
 			for(int i=0; i < length; i++){
 				// advance along the wire
 				current_x += dx;
 				current_y += dy;
+				current_wire_value += wire_increment;
 
 				// check for collisions
-				int current_value = get_grid_value(grid, current_x, current_y);
-				if (current_value && current_value != wire){
-					int current_centre_distance = manhattan_from_centre(current_x, current_y);
+				int grid_value = get_grid_value(grid, current_x, current_y);
+				if (wire_signs_differ(current_wire_value, grid_value)) {
+					// Manhattan checks
+					int current_manhattan_distance = manhattan_from_centre(current_x, current_y);
+					if (current_manhattan_distance < closest_crossing_manhattan){
+						closest_crossing_manhattan = current_manhattan_distance;
+					}
 
-					// update the best found if necessary
-					if (current_centre_distance < closest_crossing_distance){
-						closest_crossing_x = current_x;
-						closest_crossing_y = current_y;
-						closest_crossing_distance = current_centre_distance;
+					// wire distance
+					int current_wire_distance = abs(grid_value - current_wire_value);
+					if (current_wire_distance < closest_crossing_wiredist){
+						closest_crossing_wiredist = current_wire_distance;
 					}
 				} else {
 					// if no collision, just set the wire value
-					set_grid_value(grid, current_x, current_y, wire);
+					set_grid_value(grid, current_x, current_y, current_wire_value);
 				}
 			}
 
@@ -96,8 +111,9 @@ int main(int argc, char **argv){
 			}
 		}
 	}
-	
-	printf("Closest crossing: (%d, %d): %d\n", closest_crossing_x, closest_crossing_y, closest_crossing_distance);
+
+	printf("Closest manhattan crossing: %d\n", closest_crossing_manhattan);
+	printf("Closest wiredistance crossing: %d\n", closest_crossing_wiredist);
 }
 
 
@@ -132,4 +148,12 @@ int transform_to_grid(int coordinate){
  */
 int manhattan_from_centre(int x, int y){
 	return abs(x) + abs(y);
+}
+
+/*
+ * Check whether wire1 and wire2 cross based on the wire distances (one wire
+ * has negative numbers and the other has positive).
+ */
+bool wire_signs_differ(int wire1, int wire2){
+	return (wire1 < 0 && wire2 > 0) || (wire1 > 0 && wire2 < 0);
 }
