@@ -17,32 +17,9 @@ int main(int argc, char **argv){
 	int *editable_code = malloc(len * sizeof(int));
 	memcpy(editable_code, code, len * sizeof(int));
 
-	// 1202 case
-	editable_code[1] = 12;
-	editable_code[2] = 2;
-	run_code(editable_code);
-	printf("First value for 1202: %d\n", editable_code[0]);
+	run_code(code);
 
-	// Find 19690720
-	for(int noun=0; noun<=99; noun++){
-		for(int verb=0; verb<=99; verb++){
-			memcpy(editable_code, code, len * sizeof(int));
-			editable_code[1] = noun;
-			editable_code[2] = verb;
-			run_code(editable_code);
-
-			if (editable_code[0] == 19690720){
-				printf("100 * noun + verb: %d\n", 100 * noun + verb);
-				free(code);
-				free(editable_code);
-				exit(EXIT_SUCCESS);
-			}
-		}
-	}
-
-	printf("Suitable verb and noun not found.\n");
 	free(code);
-	free(editable_code);
 	exit(EXIT_FAILURE);
 }
 
@@ -58,16 +35,39 @@ void run_code(int* code){
 }
 
 int handle_operation(int* code, int index){
-	int operand1_index = code[index + 1];
-	int operand2_index = code[index + 2];
-	int result_index = code[index + 3];
+	int opcode = code[index] % 10;
+	int n_params;
 	switch(code[index]){
 		case 1:
-			code[result_index] = code[operand1_index] + code[operand2_index];
-			break;
 		case 2:
-			code[result_index] = code[operand1_index] * code[operand2_index];
+			n_params = 2;
 			break;
+		case 3:
+		case 4:
+			n_params = 1;
+			break;
+		default:
+			fprintf(stderr, "Illegal opcode %d\n", opcode);
+			exit(EXIT_FAILURE);
 	}
-	return index + 4;
+
+	int* parameter_modes = malloc(n_params * sizeof(int));
+	int modes = code[index] / 100;
+	for(int i=0; i<n_params; i++){
+		parameter_modes[i] = modes % 10;
+		modes /= 10;
+	}
+
+//	int operand1_index = code[index + 1];
+//	int operand2_index = code[index + 2];
+//	int result_index = code[index + 3];
+//	switch(code[index]){
+//		case 1:
+//			code[result_index] = code[operand1_index] + code[operand2_index];
+//			break;
+//		case 2:
+//			code[result_index] = code[operand1_index] * code[operand2_index];
+//			break;
+//	}
+//	return index + 4;
 }
