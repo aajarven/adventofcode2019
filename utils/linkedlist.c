@@ -6,6 +6,7 @@ void llist_append(struct llist_node head, void* new_node_content){
 	while (current.child != NULL) {
 		current = *current.child;
 	}
-	struct llist_node new = {new_node_content, NULL};
-	current.child = &new;
+	struct llist_node* new = (struct llist_node*) malloc(sizeof(struct llist_node));
+	new->content = new_node_content;
+	current.child = new;
 }

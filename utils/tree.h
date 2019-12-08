@@ -7,4 +7,5 @@ struct bstree_node{
 
 struct bstree_node search(struct bstree_node* root, void* content,
 		int comparator(void* content1, void* content2));
-void post_order_print(struct bstree_node* root, void* print_function(struct bstree_node* root));
+struct bstree_node* create_node(void* content, struct bstree_node* parent);
+void post_order_print(struct bstree_node* root, void print_function(struct bstree_node* root));
