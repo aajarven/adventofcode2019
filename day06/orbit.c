@@ -26,18 +26,19 @@ int main(int argc, char **argv){
 		char* line = lines[i];
 		strip_newline(line);
 		printf("read line %s\n", line);
-		char* orbitee_name = strtok(line, ")");
-		printf("orbitee: %s\n", orbitee_name);
+		char* central_name = strtok(line, ")");
 		char* orbiter_name = strtok(NULL, ")");
-		printf("orbiter: %s\n", orbiter_name);
 
-		struct orbiter orbitee = get_orbiter(root, orbitee_name);
-		struct orbiter orbiter = get_orbiter(root, orbiter_name);
-		add_orbiter(orbitee, orbiter);
-		printf("%p %p\n", root.left, root.right);
+		struct orbiter* central = get_orbiter(&root, central_name);
+		struct orbiter* orbiter = get_orbiter(&root, orbiter_name);
+		printf("orbiter name: %s\n", orbiter->name);
+		printf("orbiter list of the central: %p\n", central->orbiters);
+		add_orbiter(central, orbiter);
+		printf("orbiter list of the central: %p\n", central->orbiters);
 		printf("\n");
 	}
-	print_orbiters(com);
+	printf("gon print\n");
+	print_orbiters((struct orbiter*) root.content);
 
 	exit(EXIT_SUCCESS);
 }
@@ -59,23 +60,20 @@ int orbiter_compare(void* orbiter1, void* orbiter2){
 /*
  * Get a new/existing node for the orbiter with the given name.
  */
-struct orbiter get_orbiter(struct bstree_node root, char* name){
-	struct orbiter* new_orbiter = (struct orbiter*) malloc(sizeof(struct orbiter));
-	printf("name for the new orbiter: %s\n", name);
-	new_orbiter->name = name;
-	struct bstree_node orbiter_node = search(&root, new_orbiter, orbiter_compare);
-	printf("got orbiter node: ");
-	print_orbiter(&orbiter_node);
-	return (*(struct orbiter*) orbiter_node.content);
+struct orbiter* get_orbiter(struct bstree_node* root, char* name){
+	struct orbiter* new_orbiter = create_orbiter(name);
+	struct bstree_node* orbiter_node = search(root, new_orbiter, orbiter_compare);
+	// TODO this leaks
+	return (struct orbiter*) orbiter_node->content;
 }
 
-void add_orbiter(struct orbiter orbitee, struct orbiter new_orbiter){
-	if (orbitee.orbiters == NULL) {
-		struct llist_node* new_list = (struct llist_node*) malloc(sizeof(struct llist_node));
-		new_list->content = &new_orbiter;
-		orbitee.orbiters = new_list;
+void add_orbiter(struct orbiter* central, struct orbiter* new_orbiter){
+	if (central->orbiters == NULL) {
+		central->orbiters = create_llist(&new_orbiter);
 	} else {
-		llist_append(*orbitee.orbiters, &new_orbiter);
+		llist_append(central->orbiters, &new_orbiter);
+	new_orbiter->central = central;
+	print_orbiters(central);
 	}
 }
 
@@ -88,12 +86,14 @@ void print_orbiter(struct bstree_node* orbiter_node){
 	}
 }
 
-void print_orbiters(struct orbiter o){
-	if (o.orbiters == NULL){
-		printf("%s has no orbiters\n", o.name);
+void print_orbiters(struct orbiter* o){
+	if (o->orbiters == NULL){
+		printf("%s has no orbiters\n", o->name);
 	} else {
-		printf("%s has the following orbiters:", o.name);
-		struct llist_node* n = o.orbiters;
+		printf("%s has the following orbiters:", o->name);
+		struct llist_node* n = o->orbiters;
+		struct orbiter* current_orbiter = (struct orbiter*) n->content;
+		printf("%s\n", current_orbiter->name);
 		while (n != NULL) {
 			printf(" %s", ((struct orbiter*) n->content)->name);
 			n = n->child;
@@ -102,3 +102,11 @@ void print_orbiters(struct orbiter o){
 	}
 }
 
+
+struct orbiter* create_orbiter(char* name){
+	struct orbiter* new_orbiter = (struct orbiter*) malloc(sizeof(struct orbiter));
+	new_orbiter->name = name;
+	new_orbiter->central = NULL;
+	new_orbiter->orbiters = NULL;
+	return new_orbiter;
+}
