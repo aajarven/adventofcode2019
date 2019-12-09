@@ -1,3 +1,4 @@
+#include<stdbool.h>
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
@@ -20,26 +21,27 @@ int main(int argc, char **argv){
 	char lines[n_orbits][LINELEN];
 	read_lines(argv[1], lines[0], LINELEN, n_orbits);
 
-	struct orbiter com = {"COM", NULL, NULL};
-	struct bstree_node root = {&com, NULL, NULL, NULL};
+	struct orbiter* com = create_orbiter("COM");
+	struct bstree_node* root = (struct bstree_node*) malloc(sizeof(struct bstree_node));
+	root->content = com;
+	root->left = NULL;
+	root->right = NULL;
+	root->parent = NULL;
+
 	for (int i=0; i<n_orbits; i++){
 		char* line = lines[i];
 		strip_newline(line);
-		printf("read line %s\n", line);
 		char* central_name = strtok(line, ")");
 		char* orbiter_name = strtok(NULL, ")");
 
-		struct orbiter* central = get_orbiter(&root, central_name);
-		struct orbiter* orbiter = get_orbiter(&root, orbiter_name);
-		printf("orbiter name: %s\n", orbiter->name);
-		printf("orbiter list of the central: %p\n", central->orbiters);
+		struct orbiter* central = get_orbiter(root, central_name);
+		struct orbiter* orbiter = get_orbiter(root, orbiter_name);
 		add_orbiter(central, orbiter);
-		printf("orbiter list of the central: %p\n", central->orbiters);
-		printf("\n");
 	}
-	printf("gon print\n");
-	print_orbiters((struct orbiter*) root.content);
 
+	post_order_print(root, print_orbiter);
+	free_orbiters(com);
+	free_btree(root, true);
 	exit(EXIT_SUCCESS);
 }
 
@@ -63,18 +65,25 @@ int orbiter_compare(void* orbiter1, void* orbiter2){
 struct orbiter* get_orbiter(struct bstree_node* root, char* name){
 	struct orbiter* new_orbiter = create_orbiter(name);
 	struct bstree_node* orbiter_node = search(root, new_orbiter, orbiter_compare);
-	// TODO this leaks
+	if (orbiter_node->content != new_orbiter){
+		free(new_orbiter);
+	}
 	return (struct orbiter*) orbiter_node->content;
 }
 
+/*
+ * Add a new orbiter for the given central object. If the central did not have
+ * orbiters beforehand, a new linked list is created with the given orbiter as
+ * the only member. Otherwise the new orbiter is just appended to the end of
+ * the old linked list.
+ */
 void add_orbiter(struct orbiter* central, struct orbiter* new_orbiter){
 	if (central->orbiters == NULL) {
-		central->orbiters = create_llist(&new_orbiter);
+		central->orbiters = create_llist(new_orbiter);
 	} else {
-		llist_append(central->orbiters, &new_orbiter);
-	new_orbiter->central = central;
-	print_orbiters(central);
+		llist_append(central->orbiters, new_orbiter);
 	}
+	new_orbiter->central = central;
 }
 
 void print_orbiter(struct bstree_node* orbiter_node){
@@ -102,11 +111,23 @@ void print_orbiters(struct orbiter* o){
 	}
 }
 
-
 struct orbiter* create_orbiter(char* name){
 	struct orbiter* new_orbiter = (struct orbiter*) malloc(sizeof(struct orbiter));
 	new_orbiter->name = name;
 	new_orbiter->central = NULL;
 	new_orbiter->orbiters = NULL;
 	return new_orbiter;
+}
+
+void free_orbiters(struct orbiter* central){
+	printf("at %s\n", central->name);
+	struct llist_node* orbiter_node = central->orbiters;
+	printf("got node\n");
+	while (orbiter_node != NULL) {
+		printf("gonna free %s\n", ((struct orbiter*) orbiter_node->content)->name);
+		free_orbiters((struct orbiter*) orbiter_node->content);
+		orbiter_node = orbiter_node->child;
+	}
+	printf("freeing llist for %s\n", central->name);
+	free_llist(central->orbiters);
 }

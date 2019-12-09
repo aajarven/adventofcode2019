@@ -14,44 +14,40 @@
  */
 struct bstree_node* search(struct bstree_node* root, void* content,
 		int comparator(void* content1, void* content2)) {
-//	printf("looking for a place for %s\n", ((struct orbiter*) content)->name);
 	while (true){
-//		printf("inspecting %s.\n", ((struct orbiter*) root->content)->name);
 		int compare_result = comparator(content, root->content);
-//		printf("compare retult: %d\n", compare_result);
 		if (compare_result == 0){
-//			printf("match found\n");
 			return root;
 		} else if (compare_result < 0){
 			if (root->left != NULL) {
-//				printf("going left\n");
 				root = root->left;
 			} else {
-//				printf("creating new node as the left child\n");
 				struct bstree_node* new = create_node(content, root);
 				root->left = new;
-//				printf("%p\n", root->left);
 				return new;
 			}
 		} else if (compare_result > 0){
 			if (root->right != NULL) {
-//				printf("going right\n");
 				root = root->right;
 			} else {
-//				printf("creating new node as the right child\n");
 				struct bstree_node* new = create_node(content, root);
 				root->right = new;
-//				printf("%p\n", root->right);
 				return new;
 			}
 		}
 	}
 }
 
+/*
+ * Allocate memory for a new node and populate it with the given content and
+ * parent. Return pointer to the created node.
+ */
 struct bstree_node* create_node(void* content, struct bstree_node* parent){
 	struct bstree_node* new = (struct bstree_node*) malloc(sizeof(struct bstree_node));
 	new->content = content;
 	new->parent = parent;
+	new->left = NULL;
+	new->right = NULL;
 	return new;
 }
 
@@ -60,16 +56,27 @@ struct bstree_node* create_node(void* content, struct bstree_node* parent){
  */
 void post_order_print(struct bstree_node* root, void print_function(struct bstree_node* root)){
 	if (root->left) {
-		printf("has left\n");
 		post_order_print(root->left, print_function);
-	} else {
-		printf("no left\n");
 	}
 	if (root->right) {
-		printf("has right\n");
 		post_order_print(root->right, print_function);
-	} else {
-		printf("no right\n");
 	}
 	print_function(root);
+}
+
+/*
+ * Free all children of the given node. If free_contents is true, also frees
+ * their contents.
+ */
+void free_btree(struct bstree_node* root, bool free_contents){
+	if (root->left != NULL){
+		free_btree(root->left, free_contents);
+	}
+	if (root->right != NULL) {
+		free_btree(root->right, free_contents);
+	}
+	if (free_contents) {
+		free(root->content);
+	}
+	free(root);
 }
