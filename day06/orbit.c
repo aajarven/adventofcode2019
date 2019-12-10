@@ -28,6 +28,9 @@ int main(int argc, char **argv){
 	root->right = NULL;
 	root->parent = NULL;
 
+	struct orbiter* orbiter_you = NULL;
+	struct orbiter* orbiter_san = NULL;
+
 	for (int i=0; i<n_orbits; i++){
 		char* line = lines[i];
 		strip_newline(line);
@@ -37,10 +40,22 @@ int main(int argc, char **argv){
 		struct orbiter* central = get_orbiter(root, central_name);
 		struct orbiter* orbiter = get_orbiter(root, orbiter_name);
 		add_orbiter(central, orbiter);
+
+		if (strcmp(orbiter_name, "YOU") == 0){
+			orbiter_you = orbiter;
+		} else if (strcmp(orbiter_name, "SAN") == 0){
+			orbiter_san = orbiter;
+		}
 	}
 
 	printf("Cumulative orbiters: %d\n", count_orbiters(com, 0)); 
 
+	struct llist_node* route_you = route_to_node(com, orbiter_you);
+	struct llist_node* route_san = route_to_node(com, orbiter_san);
+	printf("Transfers to santa: %d\n", count_transfers(route_you, route_san) - 2);
+
+	free_llist(route_you);
+	free_llist(route_san);
 	free_orbiters(com);
 	free_btree(root, true);
 	exit(EXIT_SUCCESS);
@@ -87,6 +102,9 @@ void add_orbiter(struct orbiter* central, struct orbiter* new_orbiter){
 	new_orbiter->central = central;
 }
 
+/*
+ * Print the status of an orbiter: either who it orbits or that it is still.
+ */
 void print_orbiter(struct bstree_node* orbiter_node){
 	struct orbiter* o = (struct orbiter*) orbiter_node->content;
 	if (o->central) {
@@ -96,6 +114,9 @@ void print_orbiter(struct bstree_node* orbiter_node){
 	}
 }
 
+/*
+ * Prints a list of orbiters for a central body.
+ */
 void print_orbiters(struct orbiter* o){
 	if (o->orbiters == NULL){
 		printf("%s has no orbiters\n", o->name);
@@ -112,6 +133,9 @@ void print_orbiters(struct orbiter* o){
 	}
 }
 
+/*
+ * Allocate memory and initializes a new orbiter with the given name.
+ */
 struct orbiter* create_orbiter(char* name){
 	struct orbiter* new_orbiter = (struct orbiter*) malloc(sizeof(struct orbiter));
 	new_orbiter->name = name;
@@ -121,6 +145,9 @@ struct orbiter* create_orbiter(char* name){
 	return new_orbiter;
 }
 
+/*
+ * Free all orbiters directly or indirectly orbiting the given central.
+ */
 void free_orbiters(struct orbiter* central){
 	struct llist_node* orbiter_node = central->orbiters;
 	while (orbiter_node != NULL) {
@@ -132,6 +159,11 @@ void free_orbiters(struct orbiter* central){
 	}
 }
 
+/*
+ * Return the cumulative number of direct and indirect orbiters under the given
+ * central body, located at the given starting_level orbits below the COM in
+ * the orbit tree.
+ */
 int count_orbiters(struct orbiter* central, int starting_level){
 	if (central->orbiters == NULL){
 		return starting_level;
@@ -145,3 +177,55 @@ int count_orbiters(struct orbiter* central, int starting_level){
 		return orbit_count + starting_level;
 	}
 }
+
+/*
+ * Count transfers needed to get from n1 to n2. Note that this includes
+ * transfers from n1 to its central and from the central of n2 to n2.
+ */
+int count_transfers(struct llist_node* n1, struct llist_node* n2){
+	int transfers1 = 0;
+	while(n1 != NULL){
+		int transfers2 = index_in_list(n2, n1->content);
+		if (transfers2 >= 0) {
+			return transfers1 + transfers2;
+		}
+		n1 = n1->child;
+		transfers1++;
+	}
+	return -1;
+}
+
+/*
+ * Print the name of the orbiter (the given pointer has to be castable to
+ * struct orbiter*).
+ */
+void print_orbiter_name(void* o){
+	printf("%s\n", ((struct orbiter*) o)->name);
+}
+
+/*
+ * Returns the route from source to destination as a linked list. The route
+ * must be findable by traversing the orbiter tree up from the leaves towards
+ * the root. If no route is found, returns NULL. Otherwise the linked list
+ * contains all nodes on the path from source to destination, including the
+ * ends.
+ */
+struct llist_node* route_to_node(struct orbiter* destination, struct orbiter* source){
+	if (destination == source){
+		struct llist_node* route = create_llist(destination);
+		return route;
+	}
+	
+	struct llist_node* child = destination->orbiters;
+	while (child != NULL){
+		struct llist_node* route = route_to_node(child->content, source);
+		if (route != NULL) {
+			llist_append(route, destination);
+			return route;
+		}
+		child = child->child;
+	}
+
+	return NULL;
+}
+

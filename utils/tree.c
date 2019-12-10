@@ -2,8 +2,8 @@
 #include<stdlib.h>
 #include<stdio.h>
 #include"tree.h"
+#include"linkedlist.h"
 
-#include"../day06/orbit.h"
 /*
  * Searches for a node with the given content from the binary tree starting at
  * the given root. Descending to left/right child is determined using the given
