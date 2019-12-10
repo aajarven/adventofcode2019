@@ -39,7 +39,8 @@ int main(int argc, char **argv){
 		add_orbiter(central, orbiter);
 	}
 
-	post_order_print(root, print_orbiter);
+	printf("Cumulative orbiters: %d\n", count_orbiters(com, 0)); 
+
 	free_orbiters(com);
 	free_btree(root, true);
 	exit(EXIT_SUCCESS);
@@ -116,18 +117,31 @@ struct orbiter* create_orbiter(char* name){
 	new_orbiter->name = name;
 	new_orbiter->central = NULL;
 	new_orbiter->orbiters = NULL;
+	new_orbiter->orbiter_count = 0;
 	return new_orbiter;
 }
 
 void free_orbiters(struct orbiter* central){
-	printf("at %s\n", central->name);
 	struct llist_node* orbiter_node = central->orbiters;
-	printf("got node\n");
 	while (orbiter_node != NULL) {
-		printf("gonna free %s\n", ((struct orbiter*) orbiter_node->content)->name);
 		free_orbiters((struct orbiter*) orbiter_node->content);
 		orbiter_node = orbiter_node->child;
 	}
-	printf("freeing llist for %s\n", central->name);
-	free_llist(central->orbiters);
+	if (central->orbiters != NULL) {
+		free_llist(central->orbiters);
+	}
+}
+
+int count_orbiters(struct orbiter* central, int starting_level){
+	if (central->orbiters == NULL){
+		return starting_level;
+	} else {
+		int orbit_count = 0;
+		struct llist_node* node = central->orbiters;
+		while(node != NULL){
+			orbit_count += count_orbiters((struct orbiter*) node->content, starting_level + 1);
+			node = node->child;
+		}
+		return orbit_count + starting_level;
+	}
 }

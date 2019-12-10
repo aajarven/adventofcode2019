@@ -2,6 +2,7 @@ struct orbiter{
 	char* name;
 	struct orbiter* central;
 	struct llist_node* orbiters;
+	int orbiter_count;
 };
 
 int orbiter_compare(void* orbiter1, void* orbiter2);
@@ -11,3 +12,4 @@ void print_orbiter(struct bstree_node* orbiter_node);
 void print_orbiters(struct orbiter* o);
 struct orbiter* create_orbiter(char* name);
 void free_orbiters(struct orbiter* central);
+int count_orbiters(struct orbiter* central, int starting_level);
