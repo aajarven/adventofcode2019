@@ -1,3 +1,4 @@
+#include<limits.h>
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
@@ -29,16 +30,29 @@ int main(int argc, char **argv){
 		}
 	}
 
-	int *editable_code = malloc(len * sizeof(int));
-	memcpy(editable_code, code, len * sizeof(int));
-
+	int best_output = INT_MIN;
 	int* output = malloc(sizeof(int));
-	int input[2] = {3, 0};
-	run_code(code, input, output);
+	int *editable_code = malloc(len * sizeof(int));
+	for (int phase_order_index=0;
+			phase_order_index<PHASE_ORDERS;
+			phase_order_index++){
+		*output = 0;
+		for (int amplifier=0; amplifier<PHASE_LEN; amplifier++){
+			memcpy(editable_code, code, len * sizeof(int));
+			int input[2] = {phase_list[phase_order_index*PHASE_LEN + amplifier], *output};
+			run_code(code, input, output);
+		}
+		if (*output > best_output){
+			best_output = *output;
+		}
+	}
+
+	printf("Best possible thruster signal: %d\n", best_output);
 
 	free(code);
 	free(output);
-	exit(EXIT_FAILURE);
+	free(editable_code);
+	exit(EXIT_SUCCESS);
 }
 
 
@@ -170,7 +184,7 @@ int perform_operation(int* code, int* params, int index, int input[2], int* inpu
 			if (DEBUG){
 				printf("wrote input %d to index %d.\n", input[*input_index], params[0]);
 			}
-			input_index++;
+			*input_index = *input_index + 1;
 			return -1;
 		case 4:
 			*output = params[0];
