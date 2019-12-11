@@ -5,7 +5,7 @@
 #include"../utils/filereader.h"
 
 #define DEBUG 0
-#define PHASE_ORDERS (4*3*2*1)
+#define PHASE_ORDERS (5*4*3*2*1)
 #define PHASE_LEN 5
 
 int main(int argc, char **argv){
@@ -18,8 +18,17 @@ int main(int argc, char **argv){
 	int len = count_fields(argv[1], ',') - 1;
 	int *code = malloc(len * sizeof(int));
 	read_csv_ints(argv[1], len, code, ',');
-	
-	
+
+	int* phase_list = all_phases(); 	
+	if (DEBUG) {
+		for(int line=0; line<PHASE_ORDERS; line++){
+			for(int pos=0; pos<PHASE_LEN; pos++){
+				printf("%d ", phase_list[line*PHASE_LEN + pos]);
+			}
+			printf("\n");
+		}
+	}
+
 	int *editable_code = malloc(len * sizeof(int));
 	memcpy(editable_code, code, len * sizeof(int));
 
@@ -204,14 +213,39 @@ int* all_phases(){
 	for (int i=0; i<PHASE_LEN; i++){
 		phases[i] = i;
 	}
+	int output_index = 0;
+	save_permutations(phases, 0, PHASE_LEN, &output_index);
 
-	int phase_index = 1;
-	while(phase_index < PHASE_ORDERS * PHASE_LEN) {
-		memcpy(&phases[phase_index * PHASE_LEN],
-				&phases[(phase_index-1)*PHASE_LEN],
-				PHASE_LEN*sizeof(int));
-		//TODO
-	}
+//	int phase_index = 1;
+//	while(phase_index < PHASE_ORDERS * PHASE_LEN) {
+//		memcpy(&phases[phase_index * PHASE_LEN],
+//				&phases[(phase_index-1)*PHASE_LEN],
+//				PHASE_LEN*sizeof(int));
+//		
+//	}
 	return phases;
 }
 
+void save_permutations(int* source, int start_index, int length, int* output){
+	if (start_index == length-1){  // the permutation is ready, save it
+		for (int i=0; i<length; i++){
+			source[*output + i] = source[i];
+		}
+		*output += length;
+	} else { // not ready, add a digit
+		for(int i=start_index; i<length; i++){
+			swap(source, start_index, i);
+			save_permutations(source, start_index+1, length, output);			
+			swap(source, start_index, i); // undo the swapping to avoid changing the first element
+		}
+	}
+}
+
+/*
+ * Swaps the contents in indices i1 and i2 of the given array.
+ */
+void swap(int* arr, int i1, int i2){
+	int tmp = arr[i1];
+	arr[i1] = arr[i2];
+	arr[i2] = tmp;
+}
